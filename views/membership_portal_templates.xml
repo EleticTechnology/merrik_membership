@@ -1,0 +1,65 @@
+<odoo>
+
+    <!-- Portal Home Counter (الصحيح) -->
+        <template id="portal_my_home_membership"
+              inherit_id="portal.portal_my_home"
+              name="Portal Membership Counter">
+
+        <xpath expr="//div[contains(@class,'o_portal_docs')]" position="inside">
+
+               <a href="/my/memberships"
+                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <div class="o_portal_doc_icon">
+                    <i class="fa fa-id-card fa-3x"/>
+                </div>
+
+                <div class="o_portal_doc_content">
+
+                <span>My Memberships</span>
+
+                <span class="badge bg-primary rounded-pill"
+                      data-name="membership">
+                    <t t-esc="membership_count or 0"/>
+                </span>
+    </div>
+
+            </a>
+
+        </xpath>
+
+    </template>
+
+
+
+    <!-- My Memberships List -->
+    <template id="portal_my_memberships" name="My Memberships">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs" t-value="[('My Memberships', '/my/memberships')]"/>
+            <div class="container">
+                <h2 class="mb-3">My Memberships</h2>
+
+                <t t-if="not memberships">
+                    <div class="alert alert-info">No memberships found.</div>
+                </t>
+
+                <t t-foreach="memberships" t-as="m">
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-body">
+                            <h5>
+                                <a t-att-href="'/my/memberships/%s' % m.id">
+                                    <t t-esc="m.sequence"/> — <t t-esc="m.name"/>
+                                </a>
+                            </h5>
+                            <p class="text-muted">
+                                Type: <t t-esc="m.membership_type"/>
+                                |
+                                Status: <strong><t t-esc="m.state"/></strong>
+                            </p>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+
+</odoo>

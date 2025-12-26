@@ -1,0 +1,236 @@
+from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
+from datetime import date, timedelta
+
+class MerrikhMembership(models.Model):
+    _name = "merrikh.membership"
+    _description = "Merrikh Membership"
+    _inherit = ["mail.thread", "mail.activity.mixin", "portal.mixin"]
+    _order = "create_date desc"
+
+    # رقم عضوية
+    sequence = fields.Char(string="Membership No.", default="New", readonly=True, copy=False, tracking=True)
+
+    # بيانات العضو
+    name = fields.Char(string="Full Name", required=True, tracking=True)
+    phone = fields.Char(string="Phone", required=True)
+    email = fields.Char(string="Email")
+    nationality = fields.Char(string="Nationality")
+    id_number = fields.Char(string="ID / Passport No.", required=True)
+
+    image = fields.Image(string="Personal Photo", max_width=1024, max_height=1024)
+    id_image = fields.Image(string="ID / Passport Image", max_width=2048, max_height=2048)
+
+    # موافقة/إقرار
+    accept_terms = fields.Boolean(string="I accept terms & conditions", default=False, tracking=True)
+    terms_text = fields.Text(string="Terms Snapshot", readonly=True)
+
+    # ربط شريك (مهم للفواتير والبورتال)
+    partner_id = fields.Many2one("res.partner", string="Member Partner", index=True, tracking=True)
+
+    membership_type = fields.Selection([
+        ("annual", "Annual"),
+        ("supporter", "Supporter"),
+        ("honorary", "Honorary"),
+    ], default="annual", required=True, tracking=True)
+
+    # الحالات
+    state = fields.Selection([
+        ("draft", "New Application"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+        ("invoiced", "Invoice Created"),
+        ("paid", "Paid"),
+        ("active", "Active"),
+        ("expired", "Expired"),
+    ], default="draft", tracking=True, index=True)
+
+    start_date = fields.Date(string="Start Date", tracking=True)
+    end_date = fields.Date(string="End Date", tracking=True)
+
+    currency_id = fields.Many2one("res.currency", default=lambda self: self.env.company.currency_id.id)
+    fee_amount = fields.Monetary(string="Membership Fee", compute="_compute_fee_amount", store=True)
+
+    invoice_id = fields.Many2one("account.move", string="Invoice", copy=False, tracking=True)
+
+    # تحقق QR
+    verify_uuid = fields.Char(string="Verify UUID", copy=False, readonly=True, index=True)
+
+    @api.depends("membership_type")
+    def _compute_fee_amount(self):
+        annual = self.env.ref("merrikh_membership.product_merrikh_membership_annual", raise_if_not_found=False)
+        supporter = self.env.ref("merrikh_membership.product_merrikh_membership_supporter", raise_if_not_found=False)
+        honorary = self.env.ref("merrikh_membership.product_merrikh_membership_honorary", raise_if_not_found=False)
+
+        for rec in self:
+            if rec.membership_type == "annual" and annual:
+                rec.fee_amount = annual.list_price
+            elif rec.membership_type == "supporter" and supporter:
+                rec.fee_amount = supporter.list_price
+            elif rec.membership_type == "honorary" and honorary:
+                rec.fee_amount = honorary.list_price
+            else:
+                rec.fee_amount = 0.0
+
+    @api.constrains("accept_terms")
+    def _check_terms(self):
+        for rec in self:
+            if rec.state == "draft" and not rec.accept_terms:
+                # لا نمنع الحفظ من الباكند، لكن نمنع إنشاء طلب من الويب بدون شروط عبر الكنترولر
+                continue
+
+    @api.model
+    def create(self, vals):
+        if vals.get("sequence", "New") == "New":
+            vals["sequence"] = self.env["ir.sequence"].next_by_code("merrikh.membership") or "New"
+
+        # بوابة portal token
+        rec = super().create(vals)
+        rec._portal_ensure_token()
+
+        # verify uuid (لـ QR)
+        if not rec.verify_uuid:
+            rec.verify_uuid = rec._generate_verify_uuid()
+
+        # snapshot للشروط (حتى لو تغيرت لاحقًا)
+        if rec.accept_terms and not rec.terms_text:
+            rec.terms_text = rec._default_terms_text()
+
+        # إنشاء/ربط partner لو غير موجود
+        if not rec.partner_id:
+            rec.partner_id = rec._create_or_link_partner()
+
+        return rec
+
+    def write(self, vals):
+        res = super().write(vals)
+        for rec in self:
+            if vals.get("accept_terms") and not rec.terms_text:
+                rec.terms_text = rec._default_terms_text()
+            if not rec.verify_uuid:
+                rec.verify_uuid = rec._generate_verify_uuid()
+            if not rec.partner_id:
+                rec.partner_id = rec._create_or_link_partner()
+        return res
+
+    def _default_terms_text(self):
+        return _(
+            "By submitting this application, I confirm the information is accurate and I agree to the association terms "
+            "including membership rules, communications, and fee policy."
+        )
+
+    def _generate_verify_uuid(self):
+        import uuid
+        return str(uuid.uuid4())
+
+    def _create_or_link_partner(self):
+        self.ensure_one()
+        Partner = self.env["res.partner"].sudo()
+
+        domain = []
+        if self.email:
+            domain = [("email", "=", self.email)]
+        elif self.phone:
+            domain = [("phone", "=", self.phone)]
+
+        partner = Partner.search(domain, limit=1) if domain else Partner.browse()
+        if partner:
+            partner.write({
+                "name": self.name,
+                "phone": self.phone,
+                "email": self.email,
+            })
+            return partner.id
+
+        return Partner.create({
+            "name": self.name,
+            "phone": self.phone,
+            "email": self.email,
+            "type": "contact",
+        }).id
+
+    # أزرار الإدارة
+    def action_approve(self):
+        for rec in self:
+            if rec.state != "draft":
+                continue
+            rec.state = "approved"
+
+    def action_reject(self):
+        for rec in self:
+            if rec.state in ("paid", "active"):
+                raise ValidationError(_("Cannot reject a paid/active membership."))
+            rec.state = "rejected"
+
+    def action_create_invoice(self):
+        """إنشاء فاتورة للعضوية + تجهز للدفع عبر البورتال/Stripe"""
+        for rec in self:
+            if rec.state not in ("approved",):
+                continue
+
+            if not rec.partner_id:
+                rec.partner_id = rec._create_or_link_partner()
+
+            product = rec._get_membership_product()
+            if not product and rec.membership_type != "honorary":
+                raise ValidationError(_("Membership product not found."))
+
+            if rec.membership_type == "honorary":
+                # بدون دفع
+                rec.state = "paid"
+                continue
+
+            invoice_vals = {
+                "move_type": "out_invoice",
+                "partner_id": rec.partner_id.id,
+                "invoice_line_ids": [(0, 0, {
+                    "product_id": product.id,
+                    "name": product.name,
+                    "quantity": 1,
+                    "price_unit": product.list_price,
+                })],
+                "invoice_origin": rec.sequence,
+                "ref": _("Membership %s") % rec.sequence,
+            }
+            invoice = self.env["account.move"].sudo().create(invoice_vals)
+            invoice.action_post()
+
+            rec.invoice_id = invoice.id
+            rec.state = "invoiced"
+
+    def _get_membership_product(self):
+        self.ensure_one()
+        if self.membership_type == "annual":
+            return self.env.ref("merrikh_membership.product_merrikh_membership_annual", raise_if_not_found=False)
+        if self.membership_type == "supporter":
+            return self.env.ref("merrikh_membership.product_merrikh_membership_supporter", raise_if_not_found=False)
+        if self.membership_type == "honorary":
+            return self.env.ref("merrikh_membership.product_merrikh_membership_honorary", raise_if_not_found=False)
+        return False
+
+    def action_check_payment_and_activate(self):
+        """زر يدوي للتحقق/التفعيل (مفيد لو أي شيء تأخر)"""
+        for rec in self:
+            if rec.membership_type == "honorary":
+                rec._activate_membership()
+                continue
+
+            if rec.invoice_id and rec.invoice_id.payment_state in ("paid", "in_payment"):
+                rec.state = "paid"
+                rec._activate_membership()
+
+    def _activate_membership(self):
+        self.ensure_one()
+        if not self.start_date:
+            self.start_date = date.today()
+        if not self.end_date:
+            # 1 سنة افتراضيًا
+            self.end_date = self.start_date + timedelta(days=365)
+        self.state = "active"
+
+    @api.depends("end_date")
+    def _compute_expired(self):
+        today = date.today()
+        for rec in self:
+            if rec.end_date and rec.end_date < today and rec.state == "active":
+                rec.state = "expired"

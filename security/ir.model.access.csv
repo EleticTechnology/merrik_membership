@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_merrikh_membership_portal,merrikh membership portal,model_merrikh_membership,base.group_portal,1,0,0,0
+access_merrikh_membership_user,merrikh membership user,model_merrikh_membership,base.group_user,1,0,0,0
+access_merrikh_membership_admin,merrikh membership admin,model_merrikh_membership,merrikh_membership.group_merrikh_membership_admin,1,1,1,1

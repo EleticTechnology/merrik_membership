@@ -1,0 +1,48 @@
+<odoo>
+    <record id="email_membership_submitted" model="mail.template">
+        <field name="name">Membership Submitted</field>
+        <field name="model_id" ref="model_merrikh_membership"/>
+        <field name="subject">تم استلام طلب العضوية</field>
+        <field name="email_to">${object.email}</field>
+        <field name="body_html">
+            <![CDATA[
+            <p>تم استلام طلب عضويتك بنجاح.</p>
+            <p>سيتم إشعارك بعد الموافقة.</p>
+            ]]>
+        </field>
+    </record>
+
+    <record id="email_membership_approved" model="mail.template">
+        <field name="name">Membership Approved</field>
+        <field name="model_id" ref="model_merrikh_membership"/>
+        <field name="subject">تمت الموافقة على عضويتك</field>
+        <field name="email_to">${object.email}</field>
+        <field name="body_html">
+            <![CDATA[
+            <p>تمت الموافقة على عضويتك.</p>
+            <p>تم إنشاء حساب لك على البوابة.</p>
+            ]]>
+        </field>
+    </record>
+     <record id="email_membership_card" model="mail.template">
+        <field name="name">Membership Card Email</field>
+        <field name="model_id" ref="model_merrikh_membership"/>
+        <field name="subject">بطاقة عضويتك – رابطة المريخ</field>
+        <field name="email_from">${user.email or 'info@eletic-tec.com'}</field>
+        <field name="email_to">${object.email}</field>
+
+        <field name="body_html">
+            <![CDATA[
+            <p>عزيزي ${object.name},</p>
+            <p>تم تفعيل عضويتك بنجاح.</p>
+            <p>مرفق بطاقة العضوية الخاصة بك بصيغة PDF.</p>
+            <p>مع التحية،<br/>رابطة المريخ</p>
+            ]]>
+        </field>
+
+        <!-- ربط التقرير -->
+        <field name="report_template" ref="merrikh_membership.action_report_membership_card"/>
+        <field name="report_name">Membership_${object.sequence}</field>
+    </record>
+
+</odoo>

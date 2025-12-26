@@ -1,0 +1,15 @@
+<odoo>
+<record id="rule_merrikh_membership_portal" model="ir.rule">
+    <field name="name">Portal: own memberships</field>
+    <field name="model_id" ref="model_merrikh_membership"/>
+    <field name="domain_force">[('partner_id','=',user.partner_id.id)]</field>
+    <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+</record>
+<record id="rule_merrikh_membership_admin" model="ir.rule">
+    <field name="name">Admin: all memberships</field>
+    <field name="model_id" ref="model_merrikh_membership"/>
+    <field name="domain_force">[(1,'=',1)]</field>
+    <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+</record>
+
+</odoo>

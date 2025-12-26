@@ -1,0 +1,8 @@
+<odoo>
+    <record id="seq_merrikh_membership" model="ir.sequence">
+        <field name="name">Merrikh Membership</field>
+        <field name="code">merrikh.membership</field>
+        <field name="prefix">MM-</field>
+        <field name="padding">6</field>
+    </record>
+</odoo>

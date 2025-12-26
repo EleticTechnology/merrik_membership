@@ -1,0 +1,183 @@
+<odoo>
+    <template id="website_membership_form" name="نموذج عضوية رابطة المريخ">
+        <t t-call="website.layout">
+            <div class="container my-5" dir="rtl">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm">
+                            <div class="card-body p-4">
+
+                                <h2 class="mb-3 text-center" style="color:#B10E0E;">
+                                    طلب تسجيل عضوية
+                                </h2>
+                                <p class="text-muted mb-4 text-center">
+                                    رابطة مشجعي المريخ – دبي والإمارات الشمالية
+                                </p>
+
+                                <t t-if="error">
+                                    <div class="alert alert-danger">
+                                        <t t-esc="error"/>
+                                    </div>
+                                </t>
+
+                                <form action="/membership/submit"
+                                      method="post"
+                                      enctype="multipart/form-data">
+
+                                    <input type="hidden" name="csrf_token"
+                                           t-att-value="request.csrf_token()"/>
+
+                                    <!-- الاسم / الهاتف -->
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">الاسم الكامل *</label>
+                                            <input type="text" class="form-control" name="name" required="required"/>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">رقم الهاتف *</label>
+                                            <input type="text" class="form-control" name="phone" required="required"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- البريد / الجنسية -->
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">البريد الإلكتروني</label>
+                                            <input type="email" class="form-control" name="email"/>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">الجنسية</label>
+                                            <input type="text" class="form-control" name="nationality"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- الميلاد / الهوية الإماراتية -->
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">تاريخ الميلاد *</label>
+                                            <input type="date" class="form-control" name="birth_date" required="required"/>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">رقم الهوية الإماراتية *</label>
+                                            <input type="text" class="form-control" name="uae_id_number" required="required"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- الوظيفة / العنوان -->
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">الوظيفة</label>
+                                            <input type="text" class="form-control" name="job_title"/>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">العنوان</label>
+                                            <input type="text" class="form-control" name="address"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- نوع العضوية / رقم الجواز -->
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">نوع العضوية *</label>
+                                            <select class="form-select" name="membership_type" required="required">
+                                                <option value="annual">سنوية</option>
+                                                <option value="supporter">6 اشهر</option>
+                                                <option value="honorary">شهرية</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">رقم الهوية / جواز السفر *</label>
+                                            <input type="text" class="form-control" name="id_number" required="required"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- الصور -->
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">صورة شخصية *</label>
+                                            <input type="file" class="form-control" name="image"
+                                                   accept="image/*" required="required"/>
+                                            <small class="text-muted">صورة واضحة للوجه (JPG / PNG)</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">صورة الهوية / الجواز *</label>
+                                            <input type="file" class="form-control" name="id_image"
+                                                   accept="image/*" required="required"/>
+                                            <small class="text-muted">الصفحة الأمامية – واضحة</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- صورة الهوية الإماراتية -->
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">صورة الهوية الإماراتية *</label>
+                                            <input type="file" class="form-control" name="uae_id_image"
+                                                   accept="image/*" required="required"/>
+                                            <small class="text-muted">الوجهين – صورة واضحة</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- الشروط -->
+                                    <div class="border rounded p-3 mb-3" style="border-color:#FFD700;">
+                                        <h6 style="color:#007A33;">الشروط والأحكام</h6>
+                                        <ul class="text-muted">
+                                            <li>يجب أن تكون المعلومات صحيحة ودقيقة</li>
+                                            <li>رسوم العضوية غير قابلة للاسترداد</li>
+                                            <li>يحق للرابطة التواصل معك</li>
+                                        </ul>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="accept_terms" required="required"/>
+                                            <label class="form-check-label">
+                                                أوافق على الشروط
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit"
+                                            class="btn btn-lg w-100 text-white"
+                                            style="background:#B10E0E;">
+                                        إرسال الطلب
+                                    </button>
+
+                                </form>
+
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <a href="/my">الذهاب إلى البوابة</a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- صفحة الشكر بعد إرسال الطلب -->
+    <template id="website_membership_thanks" name="صفحة شكر التسجيل">
+        <t t-call="website.layout">
+            <div class="container my-5 text-center" dir="rtl">
+                <div class="alert alert-success shadow-sm">
+                    <h3 class="mb-3">✅ تم إرسال طلب العضوية بنجاح</h3>
+
+                    <p class="mb-2">
+                        رقم طلبك:
+                        <strong t-esc="membership.sequence"/>
+                    </p>
+
+                    <p class="text-muted">
+                        سيتم مراجعة الطلب من الإدارة، وبعد الموافقة يمكنك
+                        الدخول إلى البوابة والدفع وتحميل بطاقة العضوية.
+                    </p>
+
+                    <a href="/my" class="btn btn-primary mt-3">
+                        الذهاب إلى البوابة
+                    </a>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>
