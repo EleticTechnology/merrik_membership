@@ -40,9 +40,7 @@
             ]]>
         </field>
 
-        <!-- ربط التقرير -->
-        <field name="report_template" ref="merrikh_membership.action_report_membership_card"/>
-        <field name="report_name">Membership_${object.sequence}</field>
+
     </record>
 
 </odoo>

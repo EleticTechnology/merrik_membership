@@ -1,4 +1,5 @@
 <odoo>
+
     <template id="website_membership_form" name="نموذج عضوية رابطة المريخ">
         <t t-call="website.layout">
             <div class="container my-5" dir="rtl">
@@ -80,9 +81,15 @@
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label">نوع العضوية *</label>
                                             <select class="form-select" name="membership_type" required="required">
-                                                <option value="annual">سنوية</option>
-                                                <option value="supporter">6 اشهر</option>
-                                                <option value="honorary">شهرية</option>
+                                                <option value="monthly">
+                                                    شهرية – 20 درهم
+                                                </option>
+                                                <option value="semiannual">
+                                                    6 أشهر – 120 درهم
+                                                </option>
+                                                <option value="annual">
+                                                    سنوية – 240 درهم
+                                                </option>
                                             </select>
                                         </div>
                                         <div class="col-md-6 mb-3">
@@ -155,7 +162,7 @@
         </t>
     </template>
 
-    <!-- صفحة الشكر بعد إرسال الطلب -->
+    <!-- صفحة الشكر -->
     <template id="website_membership_thanks" name="صفحة شكر التسجيل">
         <t t-call="website.layout">
             <div class="container my-5 text-center" dir="rtl">

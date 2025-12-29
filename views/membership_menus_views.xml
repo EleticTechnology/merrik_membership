@@ -8,13 +8,14 @@
         <field name="model">merrikh.membership</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="sequence"/>
-                <field name="name"/>
-                <field name="phone"/>
-                <field name="membership_type"/>
-                <field name="state"/>
-                <field name="start_date"/>
-                <field name="end_date"/>
+                <field name="sequence" string="رقم العضوية"/>
+                <field name="name" string="الاسم"/>
+                <field name="phone" string="الهاتف"/>
+                <field name="membership_type" string="نوع العضوية"/>
+                <field name="amount" string="المبلغ (درهم)"/>
+                <field name="state" string="الحالة"/>
+                <field name="start_date" string="تاريخ البداية"/>
+                <field name="end_date" string="تاريخ الانتهاء"/>
             </tree>
         </field>
     </record>
@@ -26,29 +27,29 @@
         <field name="name">merrikh.membership.form</field>
         <field name="model">merrikh.membership</field>
         <field name="arch" type="xml">
-            <form>
+            <form string="طلب عضوية">
                 <header>
 
                     <button name="action_approve" type="object"
-                            string="Approve"
+                            string="اعتماد"
                             class="btn-primary"
                             groups="merrikh_membership.group_merrikh_membership_admin"
                             invisible="state != 'draft'"/>
 
                     <button name="action_reject" type="object"
-                            string="Reject"
+                            string="رفض"
                             class="btn-secondary"
                             groups="merrikh_membership.group_merrikh_membership_admin"
                             invisible="state not in ('draft','approved','invoiced')"/>
 
                     <button name="action_create_invoice" type="object"
-                            string="Create Invoice"
+                            string="إنشاء فاتورة"
                             class="btn-primary"
                             groups="merrikh_membership.group_merrikh_membership_admin"
                             invisible="state != 'approved'"/>
 
                     <button name="action_check_payment_and_activate" type="object"
-                            string="Check Payment &amp; Activate"
+                            string="التحقق من الدفع وتفعيل العضوية"
                             class="btn-primary"
                             groups="merrikh_membership.group_merrikh_membership_admin"
                             invisible="state not in ('invoiced','paid')"/>
@@ -63,33 +64,45 @@
                         <field name="sequence" readonly="1"/>
                     </h1>
 
+                    <!-- =========================
+                         بيانات العضو
+                    ========================== -->
                     <group>
-                        <group>
+                        <group string="بيانات العضو">
                             <field name="name"/>
                             <field name="phone"/>
                             <field name="email"/>
                             <field name="nationality"/>
-                            <field name="id_number"/>
-                            <field name="membership_type"/>
+                            <field name="id_number" string="رقم الهوية / الجواز"/>
+                            <field name="uae_id_number" string="رقم الهوية الإماراتية"/>
                             <field name="partner_id" readonly="1"/>
                         </group>
-                        <group>
-                            <field name="image" widget="image"/>
-                            <field name="id_image" widget="image"/>
+
+                        <group string="الصور">
+                            <field name="image" widget="image" string="الصورة الشخصية"/>
+                            <field name="id_image" widget="image" string="صورة الجواز / الهوية"/>
+                            <field name="uae_id_image" widget="image" string="صورة الهوية الإماراتية"/>
                         </group>
                     </group>
 
+                    <!-- =========================
+                         بيانات العضوية
+                    ========================== -->
                     <group>
-                        <group>
+                        <group string="بيانات العضوية">
+                            <field name="membership_type"/>
+                            <field name="amount" readonly="1"/>
+                            <field name="start_date"/>
+                            <field name="end_date" readonly="1"/>
+                        </group>
+
+                        <group string="الفاتورة والشروط">
+                            <field name="invoice_id" readonly="1"/>
                             <field name="accept_terms" readonly="1"/>
                             <field name="terms_text" readonly="1"/>
                         </group>
-                        <group>
-                            <field name="invoice_id" readonly="1"/>
-                            <field name="start_date"/>
-                            <field name="end_date"/>
-                        </group>
                     </group>
+
                 </sheet>
             </form>
         </field>
@@ -99,7 +112,7 @@
          ACTION
     ========================== -->
     <record id="action_merrikh_membership" model="ir.actions.act_window">
-        <field name="name">Merrikh Membership</field>
+        <field name="name">العضويات</field>
         <field name="res_model">merrikh.membership</field>
         <field name="view_mode">tree,form</field>
     </record>
@@ -109,14 +122,14 @@
     ========================== -->
     <menuitem
         id="menu_merrikh_membership_root"
-        name="Membership"
+        name="العضويات"
         sequence="10"
         groups="merrikh_membership.group_merrikh_membership_admin"
     />
 
     <menuitem
         id="menu_merrikh_membership"
-        name="Membership Applications"
+        name="طلبات العضوية"
         parent="menu_merrikh_membership_root"
         action="action_merrikh_membership"
         sequence="10"
