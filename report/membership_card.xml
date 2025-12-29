@@ -1,87 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+
+    <!-- ACTION -->
     <record id="action_report_membership_card" model="ir.actions.report">
-        <field name="name">Membership Card</field>
+        <field name="name">بطاقة العضوية</field>
         <field name="model">merrikh.membership</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">merrikh_membership.report_membership_card</field>
-        <field name="report_file">merrikh_membership.report_membership_card</field>
-        <field name="print_report_name">'Membership Card - %s' % (object.sequence)</field>
+        <field name="print_report_name">'بطاقة العضوية'</field>
     </record>
 
     <template id="report_membership_card">
         <t t-call="web.basic_layout">
-            <t t-set="o" t-value="doc"/>
+            <t t-set="o" t-value="env['merrikh.membership'].browse(doc_ids[0])"/>
+
+            <!-- ================= FRONT ================= -->
             <div class="page">
-                <div style="border:2px solid #B10E0E;border-radius:14px; padding:16px;">
-                    <!-- Header -->
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <div>
-                            <div style="font-size:20px;font-weight:700;color:#B10E0E;">
-                                AL-MERRIKH MEMBERSHIP
-                            </div>
-                            <div style="font-size:12px;color:#555;">
-                                Dubai &amp; Northern Emirates Fans Association
-                            </div>
+                <div style="
+                    width:85.6mm;
+                    height:54mm;
+                    margin:0 auto;
+                    background:#983a31;
+                    border:1.2mm solid #B10E0E;
+                    border-radius:5mm;
+                    padding:4mm;
+                    box-sizing:border-box;
+                    font-family:Arial, Tahoma;
+                    color:#FFD700;
+                    position:relative;
+                    overflow:hidden;
+                    direction:rtl;
+                ">
+
+                    <!-- أعلى يمين : الشعار -->
+                    <div style="
+                        position:absolute;
+                        top:4mm;
+                        right:4mm;
+                        width:38mm;
+                        height:18mm;
+                        text-align:right;
+                    ">
+                        <img src="/merrikh_membership/static/description/icon.png"
+                             style="max-height:8mm;"/>
+
+                        <div style="font-size:7.5pt;font-weight:800;">
+                            عضوية رابطة المريخ
                         </div>
-                        <div style="text-align:right;">
-                            <div style="font-size:12px;color:#007A33;font-weight:700;">MEMBERSHIP NO</div>
-                            <div style="font-size:18px;font-weight:800;">
-                                <t t-esc="o.sequence"/>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="height:10px;"></div>
-
-                    <!-- Body -->
-                    <div style="display:flex;gap:14px;">
-                        <div style="width:30%;">
-                            <t t-if="o.image">
-                                <img t-att-src="'data:image/png;base64,%s' % (o.image.decode() if hasattr(o.image,'decode') else o.image)"
-                                     style="width:100%;border-radius:12px;border:1px solid #ddd;"/>
-                            </t>
-                            <t t-else="">
-                                <div style="width:100%;height:140px;border-radius:12px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;color:#999;">
-                                    No Photo
-                                </div>
-                            </t>
-                        </div>
-
-                        <div style="width:70%;">
-                            <div style="font-size:14px;">
-                                <div><span style="color:#777;">Name:</span> <strong><t t-esc="o.name"/></strong></div>
-                                <div><span style="color:#777;">Type:</span> <strong><t t-esc="o.membership_type"/></strong></div>
-                                <div><span style="color:#777;">Status:</span> <strong><t t-esc="o.state"/></strong></div>
-                                <div><span style="color:#777;">Valid Until:</span> <strong><t t-esc="o.end_date"/></strong></div>
-                            </div>
-
-                            <div style="margin-top:10px;border-top:1px solid #eee;padding-top:10px;display:flex;justify-content:space-between;align-items:center;">
-                                <div>
-                                    <div style="font-size:11px;color:#555;">Scan to verify</div>
-                                    <div style="font-size:11px;color:#999;">/membership/verify/…</div>
-                                </div>
-                                <div style="text-align:right;">
-                                    <t t-set="verify_url" t-value="'%s/membership/verify/%s' % (request.env['ir.config_parameter'].sudo().get_param('web.base.url'), o.verify_uuid)"/>
-                                    <t t-set="verify_url"
-   t-value="'%s/membership/verify/%s' % (request.env['ir.config_parameter'].sudo().get_param('web.base.url'), o.verify_uuid)"/>
-
-<img t-att-src="'/report/barcode/?barcode_type=QR&value=%s&width=90&height=90' % verify_url"/>
-
-                                </div>
-                            </div>
-
-                            <div style="margin-top:10px;font-size:10px;color:#777;">
-                                Colors: <span style="color:#B10E0E;font-weight:700;">Red</span> •
-                                <span style="color:#FFD700;font-weight:700;">Gold</span> •
-                                <span style="color:#007A33;font-weight:700;">Green</span>
-                            </div>
+                        <div style="font-size:5pt;color:#00FF88;">
+                            دبي والإمارات الشمالية
                         </div>
                     </div>
 
-                    <!-- Footer strip -->
-                    <div style="margin-top:14px;height:10px;border-radius:10px;background:linear-gradient(90deg,#B10E0E 0%, #FFD700 50%, #007A33 100%);"></div>
+                    <!-- أعلى يسار : رقم العضوية -->
+                    <div style="
+                        position:absolute;
+                        top:3mm;
+                        left:4mm;
+                        width:38mm;
+                        height:18mm;
+                        text-align:left;
+                    ">
+                        <div style="font-size:5pt;color:#00FF88;">
+                            رقم العضوية
+                        </div>
+                        <div style="font-size:8pt;font-weight:900;">
+                            <t t-esc="o.sequence"/>
+                        </div>
+                    </div>
+
+                    <!-- أسفل يمين : الصورة -->
+                    <div style="
+                        position:absolute;
+                        bottom:4mm;
+                        right:4mm;
+                        width:38mm;
+                        height:26mm;
+                    ">
+                        <img t-if="o.image"
+                             t-att-src="image_data_uri(o.image)"
+                             style="
+                                width:22mm;
+                                height:26mm;
+                                border-radius:2mm;
+                                border:0.6mm solid #FFD700;
+                                object-fit:cover;
+                             "/>
+                    </div>
+
+                    <!-- أسفل يسار : البيانات -->
+                    <div style="
+                        position:absolute;
+                        bottom:4mm;
+                        left:4mm;
+                        width:38mm;
+                        height:26mm;
+                        font-size:6.2pt;
+                        line-height:1.6;
+                        text-align:right;
+                    ">
+                        <strong>الاسم:</strong><br/>
+                        <span style="font-size:5.7pt; line-height:1.7;">
+                            <t t-esc="o.name"/>
+                        </span><br/><br/>
+
+                        <strong>الحالة:</strong>
+                        <span style="color:#00FF88;font-weight:bold;">
+                            <t t-if="o.state == 'active'">نشطة</t>
+                            <t t-elif="o.state == 'expired'">منتهية</t>
+                            <t t-else="">غير محددة</t>
+                        </span><br/>
+
+                        <strong>صالحة حتى:</strong>
+                        <t t-esc="o.end_date"/>
+                    </div>
+
                 </div>
             </div>
+
+            <!-- ================= BACK ================= -->
+            <div class="page">
+                <div style="
+                    width:85.6mm;
+                    height:54mm;
+                    margin:0 auto;
+                    background:#983a31;
+                    border:1.2mm solid #B10E0E;
+                    border-radius:5mm;
+                    padding:6mm;
+                    box-sizing:border-box;
+                    font-family:Arial, Tahoma;
+                    color:#FFD700;
+                    text-align:center;
+                    position:relative;
+                    direction:rtl;
+                ">
+
+                    <div style="
+                        font-size:9pt;
+                        font-weight:900;
+                        margin-bottom:3mm;
+                    ">
+                        نادي المريخ الرياضي
+                    </div>
+
+                    <div style="
+                        font-size:6pt;
+                        color:#00FF88;
+                        margin-bottom:5mm;
+                    ">
+                        رابطة مشجعي المريخ بدبي والإمارات الشمالية
+                    </div>
+
+                    <div style="
+                        font-size:6.3pt;
+                        line-height:1.7;
+                        margin-bottom:4mm;
+                        padding:0 6mm;
+                    ">
+                        تشهد هذه البطاقة بأن حاملها عضو رسمي في رابطة مشجعي نادي المريخ.<br/><br/>
+                        هذه البطاقة شخصية وغير قابلة للتحويل.
+                    </div>
+
+                    <t t-set="base_url"
+                       t-value="env['ir.config_parameter'].sudo().get_param('web.base.url')"/>
+                    <t t-set="verify_url"
+                       t-value="'%s/membership/verify/%s' % (base_url, o.verify_uuid)"/>
+
+                    <div style="margin-top:-3.5mm; margin-bottom:2mm;">
+                        <img t-att-src="'/report/barcode/?barcode_type=QR&amp;value=%s&amp;width=120&amp;height=120' % verify_url"
+                             style="width:22mm;height:22mm;"/>
+                    </div>
+
+                    <div style="
+                        font-size:4.5pt;
+                        color:#00FF88;
+                    ">
+                        امسح الرمز للتحقق
+                    </div>
+
+                </div>
+            </div>
+
         </t>
     </template>
+
 </odoo>

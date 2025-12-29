@@ -7,10 +7,10 @@
                t-value="[('عضوياتي','/my/memberships'),
                          (membership.sequence or '', '')]"/>
 
-            <div class="container mt-4" style="direction:rtl; text-align:right;">
+            <div class="container mt-4" style="direction:rtl;text-align:right;">
 
                 <h3 class="mb-3">
-                    رقم العضوية:
+                    العضوية رقم
                     <strong t-esc="membership.sequence"/>
                 </h3>
 
@@ -40,9 +40,9 @@
                                     'bg-danger'
                                   ">
                                 <t t-if="membership.state == 'draft'">جديد</t>
-                                <t t-elif="membership.state == 'approved'">موافق عليها</t>
+                                <t t-elif="membership.state == 'approved'">موافق عليه</t>
                                 <t t-elif="membership.state == 'invoiced'">بانتظار الدفع</t>
-                                <t t-elif="membership.state == 'paid'">مدفوعة</t>
+                                <t t-elif="membership.state == 'paid'">مدفوع</t>
                                 <t t-elif="membership.state == 'active'">نشطة</t>
                                 <t t-elif="membership.state == 'expired'">منتهية</t>
                                 <t t-else="">مرفوضة</t>
@@ -63,14 +63,42 @@
                             </p>
                         </t>
 
-                        <div class="mt-4">
+                        <!-- ACTIONS -->
+                        <div class="mt-4 d-flex gap-2 flex-wrap">
+
+                            <!-- إنشاء فاتورة -->
+                            <t t-if="membership.state == 'approved'">
+                                <form t-att-action="'/my/memberships/%s/create_invoice' % membership.id"
+                                      method="post">
+                                    <input type="hidden" name="csrf_token"
+                                           t-att-value="request.csrf_token()"/>
+                                    <button class="btn btn-primary">
+                                        إنشاء فاتورة
+                                    </button>
+                                </form>
+                            </t>
+
+                            <!-- التحقق من الدفع -->
+                            <t t-if="membership.state in ('invoiced','paid')">
+                                <form t-att-action="'/my/memberships/%s/check_payment' % membership.id"
+                                      method="post">
+                                    <input type="hidden" name="csrf_token"
+                                           t-att-value="request.csrf_token()"/>
+                                    <button class="btn btn-success">
+                                        التحقق من الدفع وتفعيل العضوية
+                                    </button>
+                                </form>
+                            </t>
+
+                            <!-- تحميل البطاقة -->
                             <t t-if="membership.state == 'active'">
                                 <a t-att-href="'/my/memberships/%s/card' % membership.id"
-                                   class="btn btn-danger"
+                                   class="btn btn-outline-danger"
                                    target="_blank">
-                                    تحميل بطاقة العضوية
+                                    تحميل بطاقة العضوية (PDF)
                                 </a>
                             </t>
+
                         </div>
 
                     </div>

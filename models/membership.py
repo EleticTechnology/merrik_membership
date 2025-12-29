@@ -1,7 +1,9 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
-from datetime import date, timedelta
+from datetime import date
+from dateutil.relativedelta import relativedelta
 import uuid
+import base64
 
 
 class MerrikhMembership(models.Model):
@@ -42,15 +44,24 @@ class MerrikhMembership(models.Model):
 
     partner_id = fields.Many2one("res.partner", index=True)
 
+    # =========================
+    # MEMBERSHIP TYPE
+    # =========================
     membership_type = fields.Selection(
         [
-            ("annual", "Annual"),
-            ("supporter", "Supporter"),
-            ("honorary", "Honorary"),
+            ("monthly", "عضوية شهرية (20 درهم)"),
+            ("semiannual", "عضوية 6 أشهر (120 درهم)"),
+            ("annual", "عضوية سنوية (240 درهم)"),
         ],
-        default="annual",
+        default="monthly",
         required=True,
         tracking=True,
+    )
+
+    amount = fields.Float(
+        string="المبلغ (درهم)",
+        compute="_compute_amount",
+        store=True,
     )
 
     state = fields.Selection(
@@ -69,9 +80,25 @@ class MerrikhMembership(models.Model):
 
     start_date = fields.Date()
     end_date = fields.Date()
+    last_invoice_date = fields.Date(string="آخر فاتورة", readonly=True)
 
     invoice_id = fields.Many2one("account.move", copy=False)
     verify_uuid = fields.Char(readonly=True, index=True)
+
+    # =========================
+    # COMPUTE AMOUNT
+    # =========================
+    @api.depends("membership_type")
+    def _compute_amount(self):
+        for rec in self:
+            if rec.membership_type == "monthly":
+                rec.amount = 20
+            elif rec.membership_type == "semiannual":
+                rec.amount = 120
+            elif rec.membership_type == "annual":
+                rec.amount = 240
+            else:
+                rec.amount = 0
 
     # =========================
     # CREATE
@@ -123,40 +150,6 @@ class MerrikhMembership(models.Model):
         }).id
 
     # =========================
-    # PORTAL USER (FIXED)
-    # =========================
-    def _ensure_portal_user(self):
-        self.ensure_one()
-
-        if not self.partner_id or not self.partner_id.email:
-            raise UserError(_("Email is required for portal access."))
-
-        Users = self.env["res.users"].sudo()
-        portal_group = self.env.ref("base.group_portal")
-
-        user = Users.search(
-            [("partner_id", "=", self.partner_id.id)],
-            limit=1,
-        )
-
-        if not user:
-            user = Users.create({
-                "name": self.partner_id.name,
-                "login": self.partner_id.email,
-                "email": self.partner_id.email,
-                "partner_id": self.partner_id.id,
-                "groups_id": [(6, 0, [portal_group.id])],
-                "active": True,
-            })
-
-        # إرسال دعوة بورتال صحيحة (Signup)
-        user.with_context(
-            signup_force_type_in_url="signup"
-        ).action_reset_password()
-
-        return user
-
-    # =========================
     # ACTIONS
     # =========================
     def action_approve(self):
@@ -165,22 +158,8 @@ class MerrikhMembership(models.Model):
                 continue
 
             rec.state = "approved"
-
-            # إنشاء مستخدم بورتال + دعوة
             rec._ensure_portal_user()
-
-            # إرسال إيميل الموافقة
-            template = self.env.ref(
-                "merrikh_membership.email_membership_approved",
-                raise_if_not_found=False,
-            )
-            if template:
-                template.sudo().send_mail(rec.id, force_send=True)
-
-            if rec.membership_type == "honorary":
-                rec._activate_membership()
-            else:
-                rec.action_create_invoice()
+            rec.action_create_invoice()
 
     def action_reject(self):
         for rec in self:
@@ -188,14 +167,18 @@ class MerrikhMembership(models.Model):
                 raise UserError(_("You cannot reject a paid or active membership."))
             rec.state = "rejected"
 
+    # =========================
+    # CREATE INVOICE
+    # =========================
     def action_create_invoice(self):
         for rec in self:
-            if rec.state != "approved":
+            if rec.state not in ("approved", "active"):
                 continue
 
             product_map = {
-                "annual": "merrikh_membership.product_merrikh_membership_annual",
-                "supporter": "merrikh_membership.product_merrikh_membership_supporter",
+                "monthly": "merrikh_membership.product_membership_monthly",
+                "semiannual": "merrikh_membership.product_membership_semiannual",
+                "annual": "merrikh_membership.product_membership_annual",
             }
 
             product = self.env.ref(
@@ -214,7 +197,7 @@ class MerrikhMembership(models.Model):
                         "product_id": product.id,
                         "name": product.name,
                         "quantity": 1,
-                        "price_unit": product.list_price,
+                        "price_unit": rec.amount,
                     })
                 ],
                 "invoice_origin": rec.sequence,
@@ -223,7 +206,11 @@ class MerrikhMembership(models.Model):
             invoice.action_post()
             rec.invoice_id = invoice.id
             rec.state = "invoiced"
+            rec.last_invoice_date = date.today()
 
+    # =========================
+    # CHECK PAYMENT
+    # =========================
     def action_check_payment_and_activate(self):
         for rec in self:
             if rec.invoice_id and rec.invoice_id.payment_state in ("paid", "in_payment"):
@@ -231,7 +218,7 @@ class MerrikhMembership(models.Model):
                 rec._activate_membership()
 
     # =========================
-    # ACTIVATE + SEND CARD
+    # ACTIVATE MEMBERSHIP
     # =========================
     def _activate_membership(self):
         self.ensure_one()
@@ -239,25 +226,98 @@ class MerrikhMembership(models.Model):
         if not self.start_date:
             self.start_date = date.today()
 
-        if not self.end_date:
-            self.end_date = self.start_date + timedelta(days=365)
+        if self.membership_type == "monthly":
+            self.end_date = self.start_date + relativedelta(months=1)
+        elif self.membership_type == "semiannual":
+            self.end_date = self.start_date + relativedelta(months=6)
+        elif self.membership_type == "annual":
+            self.end_date = self.start_date + relativedelta(years=1)
 
         self.state = "active"
 
-        # إرسال بطاقة العضوية PDF
+        report = self.env.ref(
+            "merrikh_membership.action_report_membership_card",
+            raise_if_not_found=False
+        )
+        if not report:
+            return
+
+        pdf_content, _ = self.env["ir.actions.report"]._render_qweb_pdf(
+            report.report_name,
+            res_ids=[self.id]
+        )
+
+        attachment = self.env["ir.attachment"].sudo().create({
+            "name": f"Membership_{self.sequence}.pdf",
+            "type": "binary",
+            "datas": base64.b64encode(pdf_content),
+            "res_model": "merrikh.membership",
+            "res_id": self.id,
+            "mimetype": "application/pdf",
+        })
+
         template = self.env.ref(
             "merrikh_membership.email_membership_card",
-            raise_if_not_found=False,
+            raise_if_not_found=False
         )
         if template:
-            template.sudo().send_mail(self.id, force_send=True)
+            template.sudo().send_mail(
+                self.id,
+                email_values={"attachment_ids": [(6, 0, [attachment.id])]},
+                force_send=True,
+            )
+
+    # =========================
+    # EXTEND MEMBERSHIP
+    # =========================
+    def _extend_membership_period(self):
+        self.ensure_one()
+
+        if not self.end_date:
+            return
+
+        if self.membership_type == "monthly":
+            self.end_date += relativedelta(months=1)
+        elif self.membership_type == "semiannual":
+            self.end_date += relativedelta(months=6)
+        elif self.membership_type == "annual":
+            self.end_date += relativedelta(years=1)
+
+    # =========================
+    # CREATE RECURRING INVOICE
+    # =========================
+    def _create_recurring_invoice(self):
+        self.ensure_one()
+
+        if self.state != "active":
+            return
+
+        if self.invoice_id and self.invoice_id.payment_state not in ("paid", "in_payment"):
+            return
+
+        self.action_create_invoice()
+
+    # =========================
+    # CRON
+    # =========================
+    @api.model
+    def cron_membership_recurring_invoices(self):
+        today = date.today()
+
+        memberships = self.search([
+            ("state", "=", "active"),
+            ("end_date", "<=", today),
+        ])
+
+        for rec in memberships:
+            rec._create_recurring_invoice()
+            rec._extend_membership_period()
 
     # =========================
     # TERMS
     # =========================
     def _default_terms_text(self):
         return _(
-            "By submitting this application, I confirm that all provided "
-            "information is correct and I agree to the association terms "
-            "and membership policy."
+            "أقر بأن جميع البيانات المقدمة صحيحة، وأوافق على شروط "
+            "وأحكام رابطة مشجعي نادي المريخ."
         )

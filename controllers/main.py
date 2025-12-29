@@ -11,7 +11,9 @@ class MerrikhMembershipWebsite(http.Controller):
 
     @http.route("/membership", type="http", auth="public", website=True)
     def membership_form(self, **kw):
-        return request.render("merrikh_membership.website_membership_form", {})
+        return request.render(
+            "merrikh_membership.website_membership_form", {}
+        )
 
     @http.route(
         "/membership/submit",
@@ -32,7 +34,9 @@ class MerrikhMembershipWebsite(http.Controller):
                 },
             )
 
+        # ---------------------------------------------
         # Partner
+        # ---------------------------------------------
         user = request.env.user
         if user and not user._is_public():
             partner = user.partner_id
@@ -58,6 +62,7 @@ class MerrikhMembershipWebsite(http.Controller):
 
         if files.get("image"):
             vals["image"] = base64.b64encode(files["image"].read())
+
         if files.get("id_image"):
             vals["id_image"] = base64.b64encode(files["id_image"].read())
 
@@ -75,12 +80,13 @@ class MerrikhMembershipWebsite(http.Controller):
 class MerrikhPortal(CustomerPortal):
 
     # -----------------------------------------------------
-    # Portal Home Counter
+    # Portal Home Counters (FIXED)
     # -----------------------------------------------------
     def _prepare_home_portal_values(self, counters):
         values = super()._prepare_home_portal_values(counters)
 
-        if "membership" in counters:
+        # حماية counters (سبب سقوط Odoo سابقاً)
+        if counters and "membership" in counters:
             values["membership_count"] = request.env[
                 "merrikh.membership"
             ].sudo().search_count([
@@ -94,6 +100,7 @@ class MerrikhPortal(CustomerPortal):
     # -----------------------------------------------------
     @http.route("/my/memberships", type="http", auth="user", website=True)
     def portal_my_memberships(self, **kw):
+
         memberships = request.env["merrikh.membership"].sudo().search([
             ("partner_id", "=", request.env.user.partner_id.id)
         ])
@@ -113,6 +120,7 @@ class MerrikhPortal(CustomerPortal):
         website=True,
     )
     def portal_membership_detail(self, membership_id, **kw):
+
         membership = request.env["merrikh.membership"].sudo().browse(membership_id)
 
         if not membership.exists() or membership.partner_id != request.env.user.partner_id:
@@ -133,23 +141,34 @@ class MerrikhPortal(CustomerPortal):
         website=True,
     )
     def portal_membership_card(self, membership_id):
+
         membership = request.env["merrikh.membership"].sudo().browse(membership_id)
 
         if not membership.exists() or membership.partner_id != request.env.user.partner_id:
             return request.not_found()
 
-        pdf, _ = request.env.ref(
-            "merrikh_membership.action_report_membership_card"
-        )._render_qweb_pdf([membership.id])
+        report = request.env.ref(
+            "merrikh_membership.action_report_membership_card",
+            raise_if_not_found=False,
+        )
+        if not report:
+            return request.not_found()
 
-        headers = [
-            ("Content-Type", "application/pdf"),
-            (
-                "Content-Disposition",
-                f'inline; filename=Membership_{membership.sequence}.pdf',
-            ),
-        ]
-        return request.make_response(pdf, headers=headers)
+        pdf_content, _ = request.env["ir.actions.report"]._render_qweb_pdf(
+            report.report_name,
+            res_ids=[membership.id],
+        )
+
+        return request.make_response(
+            pdf_content,
+            headers=[
+                ("Content-Type", "application/pdf"),
+                (
+                    "Content-Disposition",
+                    f'inline; filename="Membership_{membership.sequence}.pdf"',
+                ),
+            ],
+        )
 
     # -----------------------------------------------------
     # CREATE INVOICE FROM PORTAL
@@ -163,6 +182,7 @@ class MerrikhPortal(CustomerPortal):
         csrf=True,
     )
     def portal_create_invoice(self, membership_id, **kw):
+
         membership = request.env["merrikh.membership"].sudo().browse(membership_id)
 
         if not membership.exists() or membership.partner_id != request.env.user.partner_id:
@@ -185,6 +205,7 @@ class MerrikhPortal(CustomerPortal):
         csrf=True,
     )
     def portal_check_payment(self, membership_id, **kw):
+
         membership = request.env["merrikh.membership"].sudo().browse(membership_id)
 
         if not membership.exists() or membership.partner_id != request.env.user.partner_id:
