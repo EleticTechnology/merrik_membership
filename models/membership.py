@@ -12,6 +12,8 @@ class MerrikhMembership(models.Model):
     _inherit = ["mail.thread", "mail.activity.mixin", "portal.mixin"]
     _order = "create_date desc"
 
+    partner_id = fields.Many2one('res.partner', required=True)
+    user_id = fields.Many2one('res.users', readonly=True)
     # =========================
     # BASIC FIELDS
     # =========================
@@ -321,3 +323,36 @@ class MerrikhMembership(models.Model):
             "أقر بأن جميع البيانات المقدمة صحيحة، وأوافق على شروط "
             "وأحكام رابطة مشجعي نادي المريخ."
         )
+
+
+
+
+    # ---------------------------------------------------------
+    # PORTAL USER CREATION / ENSURE
+    # ---------------------------------------------------------
+    def _ensure_portal_user(self):
+        PortalGroup = self.env.ref('base.group_portal')
+
+        for rec in self:
+            partner = rec.partner_id
+            if not partner:
+                raise UserError(_("No partner linked to this membership."))
+
+            # إذا المستخدم موجود مسبقًا
+            if partner.user_ids:
+                rec.user_id = partner.user_ids[0].id
+                continue
+
+            if not partner.email:
+                raise UserError(_("The partner must have an email to create a portal user."))
+
+            # إنشاء مستخدم بوابة
+            user = self.env['res.users'].sudo().create({
+                'name': partner.name,
+                'login': partner.email,
+                'email': partner.email,
+                'partner_id': partner.id,
+                'groups_id': [(6, 0, [PortalGroup.id])],
+            })
+
+            rec.user_id = user.id

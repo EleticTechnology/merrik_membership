@@ -21,7 +21,6 @@
         "security/ir.model.access.csv",
         "data/sequence.xml",
         "data/product.xml",
-        "data/membership_stage_data.xml",
         "views/membership_menus_views.xml",
         "views/membership_website_templates.xml",
         "views/membership_portal_templates.xml",

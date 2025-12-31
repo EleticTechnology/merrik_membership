@@ -1,25 +1,21 @@
 <odoo>
-    <record id="product_merrikh_membership_annual" model="product.product">
-        <field name="name">Merrikh Membership - Annual</field>
+
+    <record id="product_membership_monthly" model="product.product">
+        <field name="name">Membership - Monthly</field>
+        <field name="type">service</field>
+        <field name="list_price">20</field>
+    </record>
+
+    <record id="product_membership_semiannual" model="product.product">
+        <field name="name">Membership - 6 Months</field>
+        <field name="type">service</field>
+        <field name="list_price">120</field>
+    </record>
+
+    <record id="product_membership_annual" model="product.product">
+        <field name="name">Membership - Annual</field>
         <field name="type">service</field>
         <field name="list_price">240</field>
-        <field name="sale_ok">False</field>
-        <field name="purchase_ok">False</field>
     </record>
 
-    <record id="product_merrikh_membership_supporter" model="product.product">
-        <field name="name">Merrikh Membership - Supporter</field>
-        <field name="type">service</field>
-        <field name="list_price">120</field>
-        <field name="sale_ok">False</field>
-        <field name="purchase_ok">False</field>
-    </record>
-
-    <record id="product_merrikh_membership_honorary" model="product.product">
-        <field name="name">Merrikh Membership - Honorary</field>
-        <field name="type">service</field>
-        <field name="list_price">120</field>
-        <field name="sale_ok">False</field>
-        <field name="purchase_ok">False</field>
-    </record>
 </odoo>

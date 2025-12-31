@@ -1,84 +1,50 @@
 <odoo>
-
-    <template id="portal_membership_detail" name="تفاصيل العضوية">
+    <template id="portal_my_memberships" name="عضوياتي">
         <t t-call="portal.portal_layout">
 
             <t t-set="breadcrumbs"
-               t-value="[('عضوياتي','/my/memberships'),
-                         (membership.sequence or '', '')]"/>
+               t-value="[('عضوياتي', '/my/memberships')]"/>
 
-            <div class="container mt-4" style="direction:rtl; text-align:right;">
+            <div class="container mt-4" style="direction:rtl;text-align:right;">
 
-                <h3 class="mb-3">
-                    رقم العضوية:
-                    <strong t-esc="membership.sequence"/>
-                </h3>
+                <h3 class="mb-3">عضوياتي</h3>
 
-                <div class="card shadow-sm">
-                    <div class="card-body">
-
-                        <p>
-                            <strong>الاسم:</strong>
-                            <t t-esc="membership.name"/>
-                        </p>
-
-                        <p>
-                            <strong>نوع العضوية:</strong>
-                            <t t-if="membership.membership_type == 'monthly'">شهرية</t>
-                            <t t-elif="membership.membership_type == 'semiannual'">6 أشهر</t>
-                            <t t-elif="membership.membership_type == 'annual'">سنوية</t>
-                        </p>
-
-                        <p>
-                            <strong>الحالة:</strong>
-                            <span class="badge"
-                                  t-att-class="
-                                    'bg-secondary' if membership.state == 'draft' else
-                                    'bg-primary' if membership.state == 'approved' else
-                                    'bg-warning' if membership.state == 'invoiced' else
-                                    'bg-success' if membership.state in ('paid','active') else
-                                    'bg-danger'
-                                  ">
-                                <t t-if="membership.state == 'draft'">جديد</t>
-                                <t t-elif="membership.state == 'approved'">موافق عليها</t>
-                                <t t-elif="membership.state == 'invoiced'">بانتظار الدفع</t>
-                                <t t-elif="membership.state == 'paid'">مدفوعة</t>
-                                <t t-elif="membership.state == 'active'">نشطة</t>
-                                <t t-elif="membership.state == 'expired'">منتهية</t>
-                                <t t-else="">مرفوضة</t>
-                            </span>
-                        </p>
-
-                        <t t-if="membership.start_date">
-                            <p>
-                                <strong>تاريخ البداية:</strong>
-                                <t t-esc="membership.start_date"/>
-                            </p>
-                        </t>
-
-                        <t t-if="membership.end_date">
-                            <p>
-                                <strong>تاريخ الانتهاء:</strong>
-                                <t t-esc="membership.end_date"/>
-                            </p>
-                        </t>
-
-                        <div class="mt-4">
-                            <t t-if="membership.state == 'active'">
-                                <a t-att-href="'/my/memberships/%s/card' % membership.id"
-                                   class="btn btn-danger"
-                                   target="_blank">
-                                    تحميل بطاقة العضوية
-                                </a>
-                            </t>
-                        </div>
-
+                <t t-if="not memberships">
+                    <div class="alert alert-info">
+                        لا توجد عضويات حالياً
                     </div>
-                </div>
+                </t>
+
+                <t t-if="memberships">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>رقم العضوية</th>
+                                <th>النوع</th>
+                                <th>الحالة</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="memberships" t-as="m">
+                                <tr>
+                                    <td><t t-esc="m.sequence"/></td>
+                                    <td><t t-esc="m.membership_type"/></td>
+                                    <td><t t-esc="m.state"/></td>
+                                    <td>
+                                        <a t-att-href="'/my/memberships/%s' % m.id"
+                                           class="btn btn-sm btn-primary">
+                                            عرض
+                                        </a>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
 
             </div>
 
         </t>
     </template>
-
 </odoo>
